@@ -2132,4 +2132,306 @@ function refreshWeather() {
 }
 
 window.refreshWeather = refreshWeather;
-document.addEventListener('DOMContentLoaded', () => loadWeather()); 
+document.addEventListener('DOMContentLoaded', () => loadWeather());
+
+// --- Dark Mode ---
+function setDarkMode(enabled) {
+    document.body.classList.toggle('dark-mode', enabled);
+    localStorage.setItem('homepage_dark_mode', enabled ? '1' : '0');
+    const btn = document.getElementById('darkModeBtn');
+    if (btn) {
+        btn.innerHTML = enabled
+            ? '<i class="fas fa-sun"></i> Light Mode'
+            : '<i class="fas fa-moon"></i> Dark Mode';
+    }
+}
+function toggleDarkMode() {
+    setDarkMode(!document.body.classList.contains('dark-mode'));
+}
+function loadDarkModePref() {
+    const pref = localStorage.getItem('homepage_dark_mode');
+    setDarkMode(pref === '1');
+}
+document.addEventListener('DOMContentLoaded', function () {
+    loadDarkModePref();
+    const btn = document.getElementById('darkModeBtn');
+    if (btn) btn.addEventListener('click', toggleDarkMode);
+});
+
+// --- Notes Widget ---
+const NOTES_KEY = 'homepage_notes';
+const NOTES_POSITION_KEY = 'homepage_notes_position';
+const NOTES_STATE_KEY = 'homepage_notes_state';
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragStartLeft = 0;
+let dragStartTop = 0;
+
+function saveNotes() {
+    const val = document.getElementById('notesTextarea')?.value || '';
+    localStorage.setItem(NOTES_KEY, val);
+}
+
+function loadNotes() {
+    const val = localStorage.getItem(NOTES_KEY) || '';
+    const textarea = document.getElementById('notesTextarea');
+    if (textarea) textarea.value = val;
+}
+
+function saveNotesPosition() {
+    const widget = document.getElementById('notesWidget');
+    if (!widget) return;
+
+    const rect = widget.getBoundingClientRect();
+    const position = {
+        left: rect.left,
+        top: rect.top
+    };
+    localStorage.setItem(NOTES_POSITION_KEY, JSON.stringify(position));
+}
+
+function loadNotesPosition() {
+    const widget = document.getElementById('notesWidget');
+    if (!widget) return;
+
+    const savedPosition = localStorage.getItem(NOTES_POSITION_KEY);
+    if (savedPosition) {
+        try {
+            const position = JSON.parse(savedPosition);
+            // Ensure the widget stays within screen bounds
+            const maxLeft = window.innerWidth - widget.offsetWidth;
+            const maxTop = window.innerHeight - widget.offsetHeight;
+
+            const left = Math.max(0, Math.min(position.left, maxLeft));
+            const top = Math.max(0, Math.min(position.top, maxTop));
+
+            widget.style.left = left + 'px';
+            widget.style.top = top + 'px';
+            widget.style.right = 'auto';
+            widget.style.bottom = 'auto';
+        } catch (e) {
+            console.warn('Failed to load notes position:', e);
+        }
+    }
+}
+
+function saveNotesState() {
+    const widget = document.getElementById('notesWidget');
+    if (!widget) return;
+
+    const state = {
+        collapsed: widget.classList.contains('collapsed'),
+        hidden: widget.style.display === 'none'
+    };
+    localStorage.setItem(NOTES_STATE_KEY, JSON.stringify(state));
+}
+
+function loadNotesState() {
+    const widget = document.getElementById('notesWidget');
+    const showBtn = document.getElementById('showNotesBtn');
+    if (!widget || !showBtn) return;
+
+    const savedState = localStorage.getItem(NOTES_STATE_KEY);
+    if (savedState) {
+        try {
+            const state = JSON.parse(savedState);
+            if (state.hidden) {
+                widget.style.display = 'none';
+                showBtn.style.display = '';
+            } else {
+                widget.style.display = '';
+                showBtn.style.display = 'none';
+                if (state.collapsed) {
+                    collapseNotes();
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load notes state:', e);
+        }
+    }
+}
+
+function startDrag(e) {
+    const widget = document.getElementById('notesWidget');
+    if (!widget || widget.classList.contains('collapsed')) return;
+
+    // Don't start drag if clicking on textarea or buttons
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'I') {
+        return;
+    }
+
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    const rect = widget.getBoundingClientRect();
+    dragStartLeft = rect.left;
+    dragStartTop = rect.top;
+
+    widget.classList.add('dragging');
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', stopDrag);
+
+    e.preventDefault();
+}
+
+function drag(e) {
+    if (!isDragging) return;
+
+    const widget = document.getElementById('notesWidget');
+    if (!widget) return;
+
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+
+    const newLeft = dragStartLeft + deltaX;
+    const newTop = dragStartTop + deltaY;
+
+    // Keep widget within screen bounds
+    const maxLeft = window.innerWidth - widget.offsetWidth;
+    const maxTop = window.innerHeight - widget.offsetHeight;
+
+    const constrainedLeft = Math.max(0, Math.min(newLeft, maxLeft));
+    const constrainedTop = Math.max(0, Math.min(newTop, maxTop));
+
+    widget.style.left = constrainedLeft + 'px';
+    widget.style.top = constrainedTop + 'px';
+    widget.style.right = 'auto';
+    widget.style.bottom = 'auto';
+}
+
+function stopDrag() {
+    if (!isDragging) return;
+
+    isDragging = false;
+    const widget = document.getElementById('notesWidget');
+    if (widget) {
+        widget.classList.remove('dragging');
+        saveNotesPosition();
+    }
+
+    document.removeEventListener('mousemove', drag);
+    document.removeEventListener('mouseup', stopDrag);
+}
+
+function collapseNotes() {
+    const widget = document.getElementById('notesWidget');
+    const collapseBtn = document.getElementById('collapseNotesBtn');
+    if (!widget || !collapseBtn) return;
+
+    widget.classList.add('collapsed');
+    collapseBtn.innerHTML = '<i class="fas fa-expand-alt"></i>';
+    collapseBtn.title = 'Expand Notes';
+
+    // Make the collapsed widget clickable to expand
+    widget.addEventListener('click', expandNotes);
+
+    saveNotesState();
+}
+
+function expandNotes() {
+    const widget = document.getElementById('notesWidget');
+    const collapseBtn = document.getElementById('collapseNotesBtn');
+    if (!widget || !collapseBtn) return;
+
+    widget.classList.remove('collapsed');
+    collapseBtn.innerHTML = '<i class="fas fa-compress-alt"></i>';
+    collapseBtn.title = 'Collapse Notes';
+
+    // Remove the click listener to prevent expanding when clicking inside
+    widget.removeEventListener('click', expandNotes);
+
+    saveNotesState();
+}
+
+function toggleCollapseNotes() {
+    const widget = document.getElementById('notesWidget');
+    if (!widget) return;
+
+    if (widget.classList.contains('collapsed')) {
+        expandNotes();
+    } else {
+        collapseNotes();
+    }
+}
+
+function hideNotes() {
+    const widget = document.getElementById('notesWidget');
+    const showBtn = document.getElementById('showNotesBtn');
+    if (!widget || !showBtn) return;
+
+    widget.style.display = 'none';
+    showBtn.style.display = '';
+
+    // Position the show button where the widget was
+    const rect = widget.getBoundingClientRect();
+    if (rect.left > 0 && rect.top > 0) {
+        showBtn.style.left = rect.left + 'px';
+        showBtn.style.top = rect.top + 'px';
+        showBtn.style.right = 'auto';
+        showBtn.style.bottom = 'auto';
+    }
+
+    saveNotesState();
+}
+
+function showNotes() {
+    const widget = document.getElementById('notesWidget');
+    const showBtn = document.getElementById('showNotesBtn');
+    if (!widget || !showBtn) return;
+
+    widget.style.display = '';
+    showBtn.style.display = 'none';
+
+    saveNotesState();
+}
+
+// Handle window resize to keep widget in bounds
+function handleWindowResize() {
+    const widget = document.getElementById('notesWidget');
+    if (!widget || widget.style.display === 'none') return;
+
+    const rect = widget.getBoundingClientRect();
+    const maxLeft = window.innerWidth - widget.offsetWidth;
+    const maxTop = window.innerHeight - widget.offsetHeight;
+
+    if (rect.left > maxLeft || rect.top > maxTop) {
+        const newLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        const newTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        widget.style.left = newLeft + 'px';
+        widget.style.top = newTop + 'px';
+        saveNotesPosition();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadNotes();
+    loadNotesState();
+
+    // Load position after a short delay to ensure proper sizing
+    setTimeout(loadNotesPosition, 100);
+
+    const textarea = document.getElementById('notesTextarea');
+    if (textarea) textarea.addEventListener('input', saveNotes);
+
+    const hideBtn = document.getElementById('hideNotesBtn');
+    if (hideBtn) hideBtn.addEventListener('click', hideNotes);
+
+    const showBtn = document.getElementById('showNotesBtn');
+    if (showBtn) showBtn.addEventListener('click', showNotes);
+
+    const collapseBtn = document.getElementById('collapseNotesBtn');
+    if (collapseBtn) collapseBtn.addEventListener('click', toggleCollapseNotes);
+
+    // Add drag functionality
+    const notesHeader = document.querySelector('.notes-header');
+    if (notesHeader) {
+        notesHeader.addEventListener('mousedown', startDrag);
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', handleWindowResize);
+});
