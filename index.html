@@ -138,6 +138,13 @@
         </button>
     </div>
 
+    <!-- Debug Console (only shows if there are errors) -->
+    <div id="debugConsole" style="display: none; position: fixed; top: 10px; left: 10px; background: rgba(255, 0, 0, 0.9); color: white; padding: 10px; border-radius: 5px; z-index: 9999; max-width: 300px; font-family: monospace; font-size: 12px;">
+        <strong>Debug Info:</strong>
+        <div id="debugContent"></div>
+        <button onclick="document.getElementById('debugConsole').style.display='none'" style="margin-top: 5px; padding: 2px 8px; background: white; color: black; border: none; border-radius: 3px; cursor: pointer;">Hide</button>
+    </div>
+
     <!-- Add Shortcut Modal -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">

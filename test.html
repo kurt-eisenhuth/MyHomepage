@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage Test - Dark Mode & Notes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        body.dark-mode {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        
+        body.dark-mode .test-section {
+            border-color: #555;
+            background: #2a2a2a;
+        }
+        
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: vertical;
+        }
+        
+        body.dark-mode textarea {
+            background: #333;
+            color: #e0e0e0;
+            border-color: #555;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        body.dark-mode .status.success {
+            background: #1e4620;
+            color: #a3cfbd;
+            border-color: #155724;
+        }
+        
+        body.dark-mode .status.error {
+            background: #4a1e1e;
+            color: #f5c6cb;
+            border-color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Homepage Feature Test</h1>
+    <p>This page tests the core dark mode and notes functionality to help debug GitHub Pages issues.</p>
+    
+    <div class="test-section">
+        <h2>Dark Mode Test</h2>
+        <button id="testDarkModeBtn">Toggle Dark Mode</button>
+        <div id="darkModeStatus" class="status">Status: Not tested</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Notes Test</h2>
+        <textarea id="testNotesTextarea" placeholder="Type something here to test notes saving..."></textarea>
+        <button id="saveNotesBtn">Save Notes</button>
+        <button id="loadNotesBtn">Load Notes</button>
+        <button id="clearNotesBtn">Clear Notes</button>
+        <div id="notesStatus" class="status">Status: Not tested</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>LocalStorage Test</h2>
+        <button id="testLocalStorageBtn">Test LocalStorage</button>
+        <div id="localStorageStatus" class="status">Status: Not tested</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Errors</h2>
+        <div id="errorLog">No errors detected</div>
+    </div>
+
+    <script>
+        // Error logging
+        const errorLog = document.getElementById('errorLog');
+        const errors = [];
+        
+        window.addEventListener('error', function(e) {
+            const errorMsg = `${e.message} at ${e.filename}:${e.lineno}`;
+            errors.push(errorMsg);
+            errorLog.innerHTML = errors.map(err => `<div style="color: red; margin: 5px 0;">${err}</div>`).join('');
+        });
+        
+        console.error = function(...args) {
+            const errorMsg = 'Console Error: ' + args.join(' ');
+            errors.push(errorMsg);
+            errorLog.innerHTML = errors.map(err => `<div style="color: red; margin: 5px 0;">${err}</div>`).join('');
+        };
+        
+        // Dark Mode Test
+        function updateDarkModeStatus(success, message) {
+            const status = document.getElementById('darkModeStatus');
+            status.className = success ? 'status success' : 'status error';
+            status.textContent = message;
+        }
+        
+        function testDarkMode() {
+            try {
+                const isDark = document.body.classList.contains('dark-mode');
+                document.body.classList.toggle('dark-mode', !isDark);
+                localStorage.setItem('test_dark_mode', !isDark ? '1' : '0');
+                updateDarkModeStatus(true, `Dark mode ${!isDark ? 'enabled' : 'disabled'} successfully`);
+            } catch (error) {
+                updateDarkModeStatus(false, `Error: ${error.message}`);
+            }
+        }
+        
+        // Notes Test
+        function updateNotesStatus(success, message) {
+            const status = document.getElementById('notesStatus');
+            status.className = success ? 'status success' : 'status error';
+            status.textContent = message;
+        }
+        
+        function saveNotes() {
+            try {
+                const textarea = document.getElementById('testNotesTextarea');
+                const content = textarea.value;
+                localStorage.setItem('test_notes', content);
+                updateNotesStatus(true, 'Notes saved successfully');
+            } catch (error) {
+                updateNotesStatus(false, `Error saving: ${error.message}`);
+            }
+        }
+        
+        function loadNotes() {
+            try {
+                const content = localStorage.getItem('test_notes') || '';
+                const textarea = document.getElementById('testNotesTextarea');
+                textarea.value = content;
+                updateNotesStatus(true, 'Notes loaded successfully');
+            } catch (error) {
+                updateNotesStatus(false, `Error loading: ${error.message}`);
+            }
+        }
+        
+        function clearNotes() {
+            try {
+                localStorage.removeItem('test_notes');
+                const textarea = document.getElementById('testNotesTextarea');
+                textarea.value = '';
+                updateNotesStatus(true, 'Notes cleared successfully');
+            } catch (error) {
+                updateNotesStatus(false, `Error clearing: ${error.message}`);
+            }
+        }
+        
+        // LocalStorage Test
+        function updateLocalStorageStatus(success, message) {
+            const status = document.getElementById('localStorageStatus');
+            status.className = success ? 'status success' : 'status error';
+            status.textContent = message;
+        }
+        
+        function testLocalStorage() {
+            try {
+                const testKey = 'test_localstorage';
+                const testValue = 'test_value_' + Date.now();
+                
+                // Test write
+                localStorage.setItem(testKey, testValue);
+                
+                // Test read
+                const readValue = localStorage.getItem(testKey);
+                
+                if (readValue === testValue) {
+                    updateLocalStorageStatus(true, 'LocalStorage working correctly');
+                } else {
+                    updateLocalStorageStatus(false, 'LocalStorage read/write mismatch');
+                }
+                
+                // Cleanup
+                localStorage.removeItem(testKey);
+            } catch (error) {
+                updateLocalStorageStatus(false, `LocalStorage error: ${error.message}`);
+            }
+        }
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved dark mode preference
+            const savedDarkMode = localStorage.getItem('test_dark_mode');
+            if (savedDarkMode === '1') {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // Load saved notes
+            loadNotes();
+            
+            // Set up event listeners
+            document.getElementById('testDarkModeBtn').addEventListener('click', testDarkMode);
+            document.getElementById('saveNotesBtn').addEventListener('click', saveNotes);
+            document.getElementById('loadNotesBtn').addEventListener('click', loadNotes);
+            document.getElementById('clearNotesBtn').addEventListener('click', clearNotes);
+            document.getElementById('testLocalStorageBtn').addEventListener('click', testLocalStorage);
+            
+            // Auto-save notes on input
+            document.getElementById('testNotesTextarea').addEventListener('input', saveNotes);
+        });
+        
+        // Test on window load as well
+        window.addEventListener('load', function() {
+            console.log('Window loaded, running tests...');
+            testLocalStorage();
+        });
+    </script>
+</body>
+</html> 

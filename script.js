@@ -1,3 +1,42 @@
+// Debug functionality for GitHub Pages troubleshooting
+let debugMessages = [];
+
+function addDebugMessage(message, isError = false) {
+    debugMessages.push({ message, isError, timestamp: new Date().toLocaleTimeString() });
+    updateDebugConsole();
+}
+
+function updateDebugConsole() {
+    const debugConsole = document.getElementById('debugConsole');
+    const debugContent = document.getElementById('debugContent');
+
+    if (debugConsole && debugContent && debugMessages.length > 0) {
+        debugContent.innerHTML = debugMessages.slice(-10).map(msg =>
+            `<div style="color: ${msg.isError ? '#ffcccb' : '#90EE90'}; margin: 2px 0;">[${msg.timestamp}] ${msg.message}</div>`
+        ).join('');
+
+        // Show console if there are errors
+        if (debugMessages.some(msg => msg.isError)) {
+            debugConsole.style.display = 'block';
+        }
+    }
+}
+
+// Override console.error to capture errors
+const originalConsoleError = console.error;
+console.error = function (...args) {
+    addDebugMessage('ERROR: ' + args.join(' '), true);
+    originalConsoleError.apply(console, args);
+};
+
+// Catch unhandled errors
+window.addEventListener('error', function (e) {
+    addDebugMessage(`Unhandled error: ${e.message} at ${e.filename}:${e.lineno}`, true);
+});
+
+// Initial debug message
+addDebugMessage('Script started loading...');
+
 // Default links data
 const defaultLinks = {
     quick: [
@@ -2136,27 +2175,63 @@ document.addEventListener('DOMContentLoaded', () => loadWeather());
 
 // --- Dark Mode ---
 function setDarkMode(enabled) {
-    document.body.classList.toggle('dark-mode', enabled);
-    localStorage.setItem('homepage_dark_mode', enabled ? '1' : '0');
-    const btn = document.getElementById('darkModeBtn');
-    if (btn) {
-        btn.innerHTML = enabled
-            ? '<i class="fas fa-sun"></i> Light Mode'
-            : '<i class="fas fa-moon"></i> Dark Mode';
+    try {
+        document.body.classList.toggle('dark-mode', enabled);
+        localStorage.setItem('homepage_dark_mode', enabled ? '1' : '0');
+        const btn = document.getElementById('darkModeBtn');
+        if (btn) {
+            btn.innerHTML = enabled
+                ? '<i class="fas fa-sun"></i> Light Mode'
+                : '<i class="fas fa-moon"></i> Dark Mode';
+        }
+        console.log('Dark mode set to:', enabled);
+    } catch (error) {
+        console.error('Error setting dark mode:', error);
     }
 }
+
 function toggleDarkMode() {
-    setDarkMode(!document.body.classList.contains('dark-mode'));
+    try {
+        const currentMode = document.body.classList.contains('dark-mode');
+        setDarkMode(!currentMode);
+    } catch (error) {
+        console.error('Error toggling dark mode:', error);
+    }
 }
+
 function loadDarkModePref() {
-    const pref = localStorage.getItem('homepage_dark_mode');
-    setDarkMode(pref === '1');
+    try {
+        const pref = localStorage.getItem('homepage_dark_mode');
+        setDarkMode(pref === '1');
+        console.log('Dark mode preference loaded:', pref);
+    } catch (error) {
+        console.error('Error loading dark mode preference:', error);
+    }
 }
-document.addEventListener('DOMContentLoaded', function () {
-    loadDarkModePref();
-    const btn = document.getElementById('darkModeBtn');
-    if (btn) btn.addEventListener('click', toggleDarkMode);
-});
+
+// More robust initialization for dark mode
+function initializeDarkMode() {
+    try {
+        loadDarkModePref();
+        const btn = document.getElementById('darkModeBtn');
+        if (btn) {
+            btn.addEventListener('click', toggleDarkMode);
+            console.log('Dark mode button initialized');
+        } else {
+            console.warn('Dark mode button not found');
+            // Retry after a short delay
+            setTimeout(() => {
+                const retryBtn = document.getElementById('darkModeBtn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', toggleDarkMode);
+                    console.log('Dark mode button initialized on retry');
+                }
+            }, 500);
+        }
+    } catch (error) {
+        console.error('Error initializing dark mode:', error);
+    }
+}
 
 // --- Notes Widget ---
 const NOTES_KEY = 'homepage_notes';
@@ -2170,39 +2245,57 @@ let dragStartLeft = 0;
 let dragStartTop = 0;
 
 function saveNotes() {
-    const val = document.getElementById('notesTextarea')?.value || '';
-    localStorage.setItem(NOTES_KEY, val);
+    try {
+        const textarea = document.getElementById('notesTextarea');
+        const val = textarea ? textarea.value || '' : '';
+        localStorage.setItem(NOTES_KEY, val);
+    } catch (error) {
+        console.error('Error saving notes:', error);
+    }
 }
 
 function loadNotes() {
-    const val = localStorage.getItem(NOTES_KEY) || '';
-    const textarea = document.getElementById('notesTextarea');
-    if (textarea) textarea.value = val;
+    try {
+        const val = localStorage.getItem(NOTES_KEY) || '';
+        const textarea = document.getElementById('notesTextarea');
+        if (textarea) {
+            textarea.value = val;
+            console.log('Notes loaded successfully');
+        } else {
+            console.warn('Notes textarea not found');
+        }
+    } catch (error) {
+        console.error('Error loading notes:', error);
+    }
 }
 
 function saveNotesPosition() {
-    const widget = document.getElementById('notesWidget');
-    if (!widget) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        if (!widget) return;
 
-    const rect = widget.getBoundingClientRect();
-    const position = {
-        left: rect.left,
-        top: rect.top
-    };
-    localStorage.setItem(NOTES_POSITION_KEY, JSON.stringify(position));
+        const rect = widget.getBoundingClientRect();
+        const position = {
+            left: rect.left,
+            top: rect.top
+        };
+        localStorage.setItem(NOTES_POSITION_KEY, JSON.stringify(position));
+    } catch (error) {
+        console.error('Error saving notes position:', error);
+    }
 }
 
 function loadNotesPosition() {
-    const widget = document.getElementById('notesWidget');
-    if (!widget) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        if (!widget) return;
 
-    const savedPosition = localStorage.getItem(NOTES_POSITION_KEY);
-    if (savedPosition) {
-        try {
+        const savedPosition = localStorage.getItem(NOTES_POSITION_KEY);
+        if (savedPosition) {
             const position = JSON.parse(savedPosition);
             // Ensure the widget stays within screen bounds
-            const maxLeft = window.innerWidth - widget.offsetWidth;
-            const maxTop = window.innerHeight - widget.offsetHeight;
+            const maxLeft = Math.max(0, window.innerWidth - widget.offsetWidth);
+            const maxTop = Math.max(0, window.innerHeight - widget.offsetHeight);
 
             const left = Math.max(0, Math.min(position.left, maxLeft));
             const top = Math.max(0, Math.min(position.top, maxTop));
@@ -2211,31 +2304,36 @@ function loadNotesPosition() {
             widget.style.top = top + 'px';
             widget.style.right = 'auto';
             widget.style.bottom = 'auto';
-        } catch (e) {
-            console.warn('Failed to load notes position:', e);
+            console.log('Notes position loaded successfully');
         }
+    } catch (error) {
+        console.error('Error loading notes position:', error);
     }
 }
 
 function saveNotesState() {
-    const widget = document.getElementById('notesWidget');
-    if (!widget) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        if (!widget) return;
 
-    const state = {
-        collapsed: widget.classList.contains('collapsed'),
-        hidden: widget.style.display === 'none'
-    };
-    localStorage.setItem(NOTES_STATE_KEY, JSON.stringify(state));
+        const state = {
+            collapsed: widget.classList.contains('collapsed'),
+            hidden: widget.style.display === 'none'
+        };
+        localStorage.setItem(NOTES_STATE_KEY, JSON.stringify(state));
+    } catch (error) {
+        console.error('Error saving notes state:', error);
+    }
 }
 
 function loadNotesState() {
-    const widget = document.getElementById('notesWidget');
-    const showBtn = document.getElementById('showNotesBtn');
-    if (!widget || !showBtn) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        const showBtn = document.getElementById('showNotesBtn');
+        if (!widget || !showBtn) return;
 
-    const savedState = localStorage.getItem(NOTES_STATE_KEY);
-    if (savedState) {
-        try {
+        const savedState = localStorage.getItem(NOTES_STATE_KEY);
+        if (savedState) {
             const state = JSON.parse(savedState);
             if (state.hidden) {
                 widget.style.display = 'none';
@@ -2247,191 +2345,313 @@ function loadNotesState() {
                     collapseNotes();
                 }
             }
-        } catch (e) {
-            console.warn('Failed to load notes state:', e);
+            console.log('Notes state loaded successfully');
         }
+    } catch (error) {
+        console.error('Error loading notes state:', error);
     }
 }
 
 function startDrag(e) {
-    const widget = document.getElementById('notesWidget');
-    if (!widget || widget.classList.contains('collapsed')) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        if (!widget || widget.classList.contains('collapsed')) return;
 
-    // Don't start drag if clicking on textarea or buttons
-    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'I') {
-        return;
+        // Don't start drag if clicking on textarea or buttons
+        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'I') {
+            return;
+        }
+
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+
+        const rect = widget.getBoundingClientRect();
+        dragStartLeft = rect.left;
+        dragStartTop = rect.top;
+
+        widget.classList.add('dragging');
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+
+        e.preventDefault();
+    } catch (error) {
+        console.error('Error starting drag:', error);
     }
-
-    isDragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-
-    const rect = widget.getBoundingClientRect();
-    dragStartLeft = rect.left;
-    dragStartTop = rect.top;
-
-    widget.classList.add('dragging');
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', stopDrag);
-
-    e.preventDefault();
 }
 
 function drag(e) {
-    if (!isDragging) return;
+    try {
+        if (!isDragging) return;
 
-    const widget = document.getElementById('notesWidget');
-    if (!widget) return;
+        const widget = document.getElementById('notesWidget');
+        if (!widget) return;
 
-    const deltaX = e.clientX - dragStartX;
-    const deltaY = e.clientY - dragStartY;
+        const deltaX = e.clientX - dragStartX;
+        const deltaY = e.clientY - dragStartY;
 
-    const newLeft = dragStartLeft + deltaX;
-    const newTop = dragStartTop + deltaY;
+        const newLeft = dragStartLeft + deltaX;
+        const newTop = dragStartTop + deltaY;
 
-    // Keep widget within screen bounds
-    const maxLeft = window.innerWidth - widget.offsetWidth;
-    const maxTop = window.innerHeight - widget.offsetHeight;
+        // Keep widget within screen bounds
+        const maxLeft = window.innerWidth - widget.offsetWidth;
+        const maxTop = window.innerHeight - widget.offsetHeight;
 
-    const constrainedLeft = Math.max(0, Math.min(newLeft, maxLeft));
-    const constrainedTop = Math.max(0, Math.min(newTop, maxTop));
+        const constrainedLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        const constrainedTop = Math.max(0, Math.min(newTop, maxTop));
 
-    widget.style.left = constrainedLeft + 'px';
-    widget.style.top = constrainedTop + 'px';
-    widget.style.right = 'auto';
-    widget.style.bottom = 'auto';
+        widget.style.left = constrainedLeft + 'px';
+        widget.style.top = constrainedTop + 'px';
+        widget.style.right = 'auto';
+        widget.style.bottom = 'auto';
+    } catch (error) {
+        console.error('Error during drag:', error);
+    }
 }
 
 function stopDrag() {
-    if (!isDragging) return;
+    try {
+        if (!isDragging) return;
 
-    isDragging = false;
-    const widget = document.getElementById('notesWidget');
-    if (widget) {
-        widget.classList.remove('dragging');
-        saveNotesPosition();
+        isDragging = false;
+        const widget = document.getElementById('notesWidget');
+        if (widget) {
+            widget.classList.remove('dragging');
+            saveNotesPosition();
+        }
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+    } catch (error) {
+        console.error('Error stopping drag:', error);
     }
-
-    document.removeEventListener('mousemove', drag);
-    document.removeEventListener('mouseup', stopDrag);
 }
 
 function collapseNotes() {
-    const widget = document.getElementById('notesWidget');
-    const collapseBtn = document.getElementById('collapseNotesBtn');
-    if (!widget || !collapseBtn) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        const collapseBtn = document.getElementById('collapseNotesBtn');
+        if (!widget || !collapseBtn) return;
 
-    widget.classList.add('collapsed');
-    collapseBtn.innerHTML = '<i class="fas fa-expand-alt"></i>';
-    collapseBtn.title = 'Expand Notes';
+        widget.classList.add('collapsed');
+        collapseBtn.innerHTML = '<i class="fas fa-expand-alt"></i>';
+        collapseBtn.title = 'Expand Notes';
 
-    // Make the collapsed widget clickable to expand
-    widget.addEventListener('click', expandNotes);
+        // Make the collapsed widget clickable to expand
+        widget.addEventListener('click', expandNotes);
 
-    saveNotesState();
+        saveNotesState();
+        console.log('Notes collapsed');
+    } catch (error) {
+        console.error('Error collapsing notes:', error);
+    }
 }
 
 function expandNotes() {
-    const widget = document.getElementById('notesWidget');
-    const collapseBtn = document.getElementById('collapseNotesBtn');
-    if (!widget || !collapseBtn) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        const collapseBtn = document.getElementById('collapseNotesBtn');
+        if (!widget || !collapseBtn) return;
 
-    widget.classList.remove('collapsed');
-    collapseBtn.innerHTML = '<i class="fas fa-compress-alt"></i>';
-    collapseBtn.title = 'Collapse Notes';
+        widget.classList.remove('collapsed');
+        collapseBtn.innerHTML = '<i class="fas fa-compress-alt"></i>';
+        collapseBtn.title = 'Collapse Notes';
 
-    // Remove the click listener to prevent expanding when clicking inside
-    widget.removeEventListener('click', expandNotes);
+        // Remove the click listener to prevent expanding when clicking inside
+        widget.removeEventListener('click', expandNotes);
 
-    saveNotesState();
+        saveNotesState();
+        console.log('Notes expanded');
+    } catch (error) {
+        console.error('Error expanding notes:', error);
+    }
 }
 
 function toggleCollapseNotes() {
-    const widget = document.getElementById('notesWidget');
-    if (!widget) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        if (!widget) return;
 
-    if (widget.classList.contains('collapsed')) {
-        expandNotes();
-    } else {
-        collapseNotes();
+        if (widget.classList.contains('collapsed')) {
+            expandNotes();
+        } else {
+            collapseNotes();
+        }
+    } catch (error) {
+        console.error('Error toggling collapse notes:', error);
     }
 }
 
 function hideNotes() {
-    const widget = document.getElementById('notesWidget');
-    const showBtn = document.getElementById('showNotesBtn');
-    if (!widget || !showBtn) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        const showBtn = document.getElementById('showNotesBtn');
+        if (!widget || !showBtn) return;
 
-    widget.style.display = 'none';
-    showBtn.style.display = '';
+        widget.style.display = 'none';
+        showBtn.style.display = '';
 
-    // Position the show button where the widget was
-    const rect = widget.getBoundingClientRect();
-    if (rect.left > 0 && rect.top > 0) {
-        showBtn.style.left = rect.left + 'px';
-        showBtn.style.top = rect.top + 'px';
-        showBtn.style.right = 'auto';
-        showBtn.style.bottom = 'auto';
+        // Position the show button where the widget was
+        const rect = widget.getBoundingClientRect();
+        if (rect.left > 0 && rect.top > 0) {
+            showBtn.style.left = rect.left + 'px';
+            showBtn.style.top = rect.top + 'px';
+            showBtn.style.right = 'auto';
+            showBtn.style.bottom = 'auto';
+        }
+
+        saveNotesState();
+        console.log('Notes hidden');
+    } catch (error) {
+        console.error('Error hiding notes:', error);
     }
-
-    saveNotesState();
 }
 
 function showNotes() {
-    const widget = document.getElementById('notesWidget');
-    const showBtn = document.getElementById('showNotesBtn');
-    if (!widget || !showBtn) return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        const showBtn = document.getElementById('showNotesBtn');
+        if (!widget || !showBtn) return;
 
-    widget.style.display = '';
-    showBtn.style.display = 'none';
+        widget.style.display = '';
+        showBtn.style.display = 'none';
 
-    saveNotesState();
+        saveNotesState();
+        console.log('Notes shown');
+    } catch (error) {
+        console.error('Error showing notes:', error);
+    }
 }
 
 // Handle window resize to keep widget in bounds
 function handleWindowResize() {
-    const widget = document.getElementById('notesWidget');
-    if (!widget || widget.style.display === 'none') return;
+    try {
+        const widget = document.getElementById('notesWidget');
+        if (!widget || widget.style.display === 'none') return;
 
-    const rect = widget.getBoundingClientRect();
-    const maxLeft = window.innerWidth - widget.offsetWidth;
-    const maxTop = window.innerHeight - widget.offsetHeight;
+        const rect = widget.getBoundingClientRect();
+        const maxLeft = window.innerWidth - widget.offsetWidth;
+        const maxTop = window.innerHeight - widget.offsetHeight;
 
-    if (rect.left > maxLeft || rect.top > maxTop) {
-        const newLeft = Math.max(0, Math.min(rect.left, maxLeft));
-        const newTop = Math.max(0, Math.min(rect.top, maxTop));
+        if (rect.left > maxLeft || rect.top > maxTop) {
+            const newLeft = Math.max(0, Math.min(rect.left, maxLeft));
+            const newTop = Math.max(0, Math.min(rect.top, maxTop));
 
-        widget.style.left = newLeft + 'px';
-        widget.style.top = newTop + 'px';
-        saveNotesPosition();
+            widget.style.left = newLeft + 'px';
+            widget.style.top = newTop + 'px';
+            saveNotesPosition();
+        }
+    } catch (error) {
+        console.error('Error handling window resize:', error);
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    loadNotes();
-    loadNotesState();
+// More robust notes initialization
+function initializeNotes() {
+    try {
+        console.log('Initializing notes widget...');
 
-    // Load position after a short delay to ensure proper sizing
-    setTimeout(loadNotesPosition, 100);
+        loadNotes();
+        loadNotesState();
 
-    const textarea = document.getElementById('notesTextarea');
-    if (textarea) textarea.addEventListener('input', saveNotes);
+        // Load position after a short delay to ensure proper sizing
+        setTimeout(loadNotesPosition, 100);
 
-    const hideBtn = document.getElementById('hideNotesBtn');
-    if (hideBtn) hideBtn.addEventListener('click', hideNotes);
+        const textarea = document.getElementById('notesTextarea');
+        if (textarea) {
+            textarea.addEventListener('input', saveNotes);
+            console.log('Notes textarea initialized');
+        } else {
+            console.warn('Notes textarea not found');
+        }
 
-    const showBtn = document.getElementById('showNotesBtn');
-    if (showBtn) showBtn.addEventListener('click', showNotes);
+        const hideBtn = document.getElementById('hideNotesBtn');
+        if (hideBtn) {
+            hideBtn.addEventListener('click', hideNotes);
+            console.log('Hide notes button initialized');
+        } else {
+            console.warn('Hide notes button not found');
+        }
 
-    const collapseBtn = document.getElementById('collapseNotesBtn');
-    if (collapseBtn) collapseBtn.addEventListener('click', toggleCollapseNotes);
+        const showBtn = document.getElementById('showNotesBtn');
+        if (showBtn) {
+            showBtn.addEventListener('click', showNotes);
+            console.log('Show notes button initialized');
+        } else {
+            console.warn('Show notes button not found');
+        }
 
-    // Add drag functionality
-    const notesHeader = document.querySelector('.notes-header');
-    if (notesHeader) {
-        notesHeader.addEventListener('mousedown', startDrag);
+        const collapseBtn = document.getElementById('collapseNotesBtn');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', toggleCollapseNotes);
+            console.log('Collapse notes button initialized');
+        } else {
+            console.warn('Collapse notes button not found');
+        }
+
+        // Add drag functionality
+        const notesHeader = document.querySelector('.notes-header');
+        if (notesHeader) {
+            notesHeader.addEventListener('mousedown', startDrag);
+            console.log('Notes drag functionality initialized');
+        } else {
+            console.warn('Notes header not found');
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', handleWindowResize);
+
+        console.log('Notes widget initialization complete');
+    } catch (error) {
+        console.error('Error initializing notes:', error);
     }
+}
 
-    // Handle window resize
-    window.addEventListener('resize', handleWindowResize);
+// Enhanced DOM ready detection
+function initializeNotesAndDarkMode() {
+    addDebugMessage('Initializing notes and dark mode...');
+    console.log('Initializing notes and dark mode...');
+
+    // Check if elements exist
+    const darkModeBtn = document.getElementById('darkModeBtn');
+    const notesWidget = document.getElementById('notesWidget');
+    const notesTextarea = document.getElementById('notesTextarea');
+
+    addDebugMessage(`Dark mode button: ${darkModeBtn ? 'Found' : 'NOT FOUND'}`);
+    addDebugMessage(`Notes widget: ${notesWidget ? 'Found' : 'NOT FOUND'}`);
+    addDebugMessage(`Notes textarea: ${notesTextarea ? 'Found' : 'NOT FOUND'}`);
+
+    // Try immediate initialization
+    initializeDarkMode();
+    initializeNotes();
+
+    // Also try after a delay in case elements aren't ready
+    setTimeout(() => {
+        addDebugMessage('Retry initialization after delay...');
+        console.log('Retry initialization after delay...');
+        initializeDarkMode();
+        initializeNotes();
+    }, 1000);
+}
+
+// Multiple event listeners to ensure initialization
+document.addEventListener('DOMContentLoaded', function () {
+    addDebugMessage('DOMContentLoaded event fired');
+    initializeNotesAndDarkMode();
+});
+
+// Fallback for cases where DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    addDebugMessage('Document still loading, waiting for DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', initializeNotesAndDarkMode);
+} else {
+    // DOM is already ready
+    addDebugMessage('DOM already ready, initializing immediately');
+    initializeNotesAndDarkMode();
+}
+
+// Additional fallback
+window.addEventListener('load', function () {
+    addDebugMessage('Window load event fired');
+    initializeNotesAndDarkMode();
 });
