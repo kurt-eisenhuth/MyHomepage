@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Homepage</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div id="weatherWidget" class="weather-widget-header"></div>
+            <div class="clock-date" id="clockDate"></div>
+            <div class="header-buttons">
+                <button class="background-btn" id="backgroundBtn">
+                    <i class="fas fa-palette"></i>
+                    Background
+                </button>
+                <button class="add-shortcut-btn" id="addShortcutBtn">
+                    <i class="fas fa-plus"></i>
+                    Add Shortcut
+                </button>
+                <button class="minimal-btn" id="minimalModeBtn" title="Toggle Minimal Mode">
+                    <i class="fas fa-compress"></i>
+                    Minimal Mode
+                </button>
+            </div>
+        </header>
+
+        <!-- Google Search Section -->
+        <section class="search-section">
+            <form class="search-form" action="https://www.google.com/search" method="get" target="_blank">
+                <div class="search-container">
+                    <i class="fab fa-google search-icon"></i>
+                    <input type="text" name="q" class="search-input" placeholder="Search Google..." autocomplete="off">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Weather Widget -->
+        <section id="weatherWidget" class="weather-widget-section">
+            <!-- Weather will be injected here -->
+        </section>
+
+        <main class="main-content">
+            <!-- Left Column - Links -->
+            <div class="links-column">
+                <div class="column-header">
+                    <h2>Links</h2>
+                </div>
+                
+                <!-- Quick Links Section -->
+                <section class="links-section">
+                    <h3 class="section-title">Quick Links</h3>
+                    <div class="links-grid" id="quickLinksGrid">
+                        <!-- Default links will be added via JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Sports Section -->
+                <section class="links-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-trophy"></i>
+                        Sports
+                    </h3>
+                    <div class="links-grid" id="sportsGrid">
+                        <!-- Sports links will be added via JavaScript -->
+                    </div>
+                </section>
+
+                <!-- News Links Section -->
+                <section class="links-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-newspaper"></i>
+                        News Sites
+                    </h3>
+                    <div class="links-grid" id="newsGrid">
+                        <!-- News links will be added via JavaScript -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column - Live News Feed -->
+            <div class="news-column">
+                <div class="column-header">
+                    <h2>Live News Feed</h2>
+                    <button class="refresh-btn" id="refreshNews" title="Refresh news">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <div class="news-sources">
+                    <button class="source-btn active" data-source="all">All</button>
+                    <button class="source-btn" data-source="cnn">CNN</button>
+                    <button class="source-btn" data-source="msnbc">MSNBC</button>
+                    <button class="source-btn" data-source="ap">AP News</button>
+                    <button class="source-btn" data-source="reuters">Reuters</button>
+                    <button class="source-btn" data-source="npr">NPR</button>
+                    <button class="source-btn" data-source="bbc">BBC</button>
+                    <button class="source-btn" data-source="verge">The Verge</button>
+                    <button class="source-btn" data-source="techcrunch">TechCrunch</button>
+                    <button class="source-btn" data-source="nyt">NYT</button>
+                </div>
+
+                <div class="news-feed" id="newsFeed">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading news...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Shortcut Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add New Shortcut</h3>
+                <button class="close-btn" id="closeBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="shortcutForm">
+                <div class="form-group">
+                    <label for="shortcutName">Name *</label>
+                    <input type="text" id="shortcutName" name="shortcutName" required placeholder="e.g., YouTube" maxlength="20" minlength="2">
+                    <small>2-20 characters</small>
+                </div>
+                <div class="form-group">
+                    <label for="shortcutUrl">URL *</label>
+                    <input type="url" id="shortcutUrl" name="shortcutUrl" required placeholder="https://example.com">
+                    <small>http:// or https:// will be added automatically if missing</small>
+                </div>
+                <div class="form-group">
+                    <label for="shortcutIcon">Icon (Font Awesome class)</label>
+                    <input type="text" id="shortcutIcon" name="shortcutIcon" placeholder="e.g., fab fa-youtube">
+                    <button type="button" class="icon-picker-btn" onclick="openIconPicker()">
+                        <i class="fas fa-icons"></i>
+                        Browse Icons
+                    </button>
+                    <small>Visit <a href="https://fontawesome.com/icons" target="_blank" rel="noopener">FontAwesome</a> to find icons. Auto-suggested for popular sites.</small>
+                </div>
+                <div class="form-group">
+                    <label for="shortcutSection">Section *</label>
+                    <select id="shortcutSection" name="shortcutSection" required>
+                        <option value="">Choose a section</option>
+                        <option value="quick">Quick Links</option>
+                        <option value="sports">Sports</option>
+                        <option value="news">News Sites</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="shortcutColor">Color</label>
+                    <input type="color" id="shortcutColor" name="shortcutColor" value="#4285f4">
+                    <small>Auto-suggested for popular sites</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Shortcut</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Background Modal (created dynamically via JavaScript) -->
+    <!-- 
+    The background selection modal is created dynamically when the background button is clicked.
+    It includes:
+    - 10 preset gradient options
+    - Custom gradient input field
+    - CSS Gradient Generator link
+    - Immediate preview and save functionality
+    -->
+
+    <script src="script.js"></script>
+</body>
+</html> 
